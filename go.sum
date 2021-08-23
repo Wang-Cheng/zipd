@@ -1,0 +1,4 @@
+github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
+github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
+github.com/wang-cheng/zip v0.0.1 h1:VZWIWYFy39b3SUModTJt3TRfv793T6nTtSF7mGCPwNg=
+github.com/wang-cheng/zip v0.0.1/go.mod h1:tCakUD73wbui5OsO7SIaIbYObzehIH5gZl65Dywbck0=
