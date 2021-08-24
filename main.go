@@ -85,32 +85,50 @@ func zipDecTest(name string, password string) (bool, error) {
 			fmt.Printf("%s not encrypted\n", name)
 			continue
 		}
-		if !f.IsZipCrypto() {
-			fmt.Printf("%s not zipcrypto, ae=%d\n", name, f.AE)
-			continue
-		}
 		r, err := f.OpenRaw()
 		if err != nil {
 			fmt.Printf("%s open fail, err=%v\n", name, err)
 			continue
 		}
-		header := make([]byte, zip.ZipCryptoHeaderLen)
-		n, err := r.Read(header)
-		if err != nil {
-			fmt.Printf("%s read fail, err=%v\n", name, err)
-			continue
+		if f.IsZipCrypto() {
+			header := make([]byte, zip.ZipCryptoHeaderLen)
+			n, err := r.Read(header)
+			if err != nil {
+				fmt.Printf("%s read fail, err=%v\n", name, err)
+				continue
+			}
+			if n != zip.ZipCryptoHeaderLen {
+				fmt.Printf("%s read not expected length, n=%d\n", name, n)
+				continue
+			}
+			t := zip.NewZipCryptoTrier(header, [2]byte{byte(f.ModifiedTime & 0xff), byte((f.ModifiedTime >> 8) & 0xff)})
+			ok := t.Try([]byte(password))
+			if !ok {
+				fmt.Printf("%s password invalid\n", name)
+				continue
+			}
+			fmt.Printf("%s password ok\n", name)
+		} else {
+			keyLen := aesKeyLen(f.AesStrength)
+			saltLen := keyLen / 2
+			if saltLen == 0 {
+				fmt.Printf("%s invalid aesStrength=%d", name, f.AesStrength)
+				continue
+			}
+			saltpwvv := make([]byte, saltLen+2)
+			if n, err := r.Read(saltpwvv); err != nil || n != len(saltpwvv) {
+				fmt.Printf("%s read salt fail, n=%d, err=%v", name, n, err)
+				continue
+			}
+			salt := saltpwvv[:saltLen]
+			pwvv := saltpwvv[saltLen:]
+			ok := checkAesPassword(salt, pwvv, keyLen, []byte(password))
+			if !ok {
+				fmt.Printf("%s password invalid\n", name)
+				continue
+			}
+			fmt.Printf("%s password ok\n", name)
 		}
-		if n != zip.ZipCryptoHeaderLen {
-			fmt.Printf("%s read not expected length, n=%d\n", name, n)
-			continue
-		}
-		t := zip.NewZipCryptoTrier(header, [2]byte{byte(f.ModifiedTime & 0xff), byte((f.ModifiedTime >> 8) & 0xff)})
-		ok := t.Try([]byte(password))
-		if !ok {
-			fmt.Printf("%s password invalid\n", name)
-			continue
-		}
-		fmt.Printf("%s password ok\n", name)
 	}
 	return false, nil
 }
